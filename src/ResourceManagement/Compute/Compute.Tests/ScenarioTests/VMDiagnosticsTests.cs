@@ -13,13 +13,11 @@
 // limitations under the License.
 //
 
+using Microsoft.Azure;
 using Microsoft.Azure.Management.Compute;
 using Microsoft.Azure.Management.Compute.Models;
 using Microsoft.Azure.Management.Resources;
-using Microsoft.Rest.Azure;
-using Microsoft.Rest.ClientRuntime.Azure.TestFramework;
-using System;
-using System.Collections.Generic;
+using Microsoft.Azure.Test;
 using System.Net;
 using Xunit;
 
@@ -42,9 +40,10 @@ namespace Compute.Tests
         [Trait("Name", "TestVMBootDiagnostics")]
         public void TestVMBootDiagnostics()
         {
-            using (MockContext context = MockContext.Start(this.GetType().FullName))
+            using (var context = UndoContext.Current)
             {
-                EnsureClientsInitialized(context);
+                context.Start();
+                EnsureClientsInitialized();
 
                 ImageReference imageRef = GetPlatformVMImage(useWindowsImage: true);
                 // Create resource group
@@ -62,15 +61,20 @@ namespace Compute.Tests
                         {
                             vm.DiagnosticsProfile = GetDiagnosticsProfile(storageAccountOutput.Name);
                         });
-                    
-                    var getVMWithInstanceViewResponse = m_CrpClient.VirtualMachines.Get(rgName, inputVM.Name, "instanceView");
-                    ValidateVMInstanceView(inputVM, getVMWithInstanceViewResponse);
-                    
-                    m_CrpClient.VirtualMachines.Delete(rgName, inputVM.Name);
+
+                    var getVMWithInstanceViewResponse = m_CrpClient.VirtualMachines.GetWithInstanceView(rgName, inputVM.Name);
+                    Assert.True(getVMWithInstanceViewResponse.StatusCode == HttpStatusCode.OK);
+                    Assert.True(getVMWithInstanceViewResponse.VirtualMachine != null, "VM in Get");
+                    ValidateVMInstanceView(inputVM, getVMWithInstanceViewResponse.VirtualMachine);
+
+                   
+                    var lroResponse = m_CrpClient.VirtualMachines.Delete(rgName, inputVM.Name);
+                    Assert.True(lroResponse.Status != OperationStatus.Failed);
                 }
                 finally
                 {
-                    m_ResourcesClient.ResourceGroups.Delete(rgName);
+                    var deleteResourceGroupResponse = m_ResourcesClient.ResourceGroups.Delete(rgName);
+                    Assert.True(deleteResourceGroupResponse.StatusCode == HttpStatusCode.OK);
                 }
             }
         }

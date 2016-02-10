@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Common.Authentication
     /// <summary>
     /// This class provides the representation of
     /// data loaded and saved into data files
-    /// for AzureSMProfile.
+    /// for AzureProfile.
     /// </summary>
     [DataContract]
     public class ProfileData
@@ -63,8 +63,6 @@ namespace Microsoft.Azure.Common.Authentication
                     { AzureEnvironment.Endpoint.ServiceManagement, this.ServiceEndpoint },
                     { AzureEnvironment.Endpoint.SqlDatabaseDnsSuffix, this.SqlDatabaseDnsSuffix },
                     { AzureEnvironment.Endpoint.StorageEndpointSuffix, this.StorageEndpointSuffix },
-                    { AzureEnvironment.Endpoint.AzureDataLakeAnalyticsCatalogAndJobEndpointSuffix, this.AzureDataLakeAnalyticsCatalogAndJobEndpointSuffix },
-                    { AzureEnvironment.Endpoint.AzureDataLakeStoreFileSystemEndpointSuffix, this.AzureDataLakeStoreFileSystemEndpointSuffix },
                 }
             };
         }
@@ -104,12 +102,6 @@ namespace Microsoft.Azure.Common.Authentication
 
         [DataMember]
         public string TrafficManagerEndpointSuffix { get; set; }
-
-        [DataMember]
-        public string AzureDataLakeAnalyticsCatalogAndJobEndpointSuffix { get; set; }
-
-        [DataMember]
-        public string AzureDataLakeStoreFileSystemEndpointSuffix { get; set; }
     }
 
     /// <summary>
@@ -155,6 +147,8 @@ namespace Microsoft.Azure.Common.Authentication
             if (!string.IsNullOrEmpty(this.ManagementCertificate))
             {
                 subscription.Account = this.ManagementCertificate;
+                subscription.SetProperty(AzureSubscription.Property.SupportedModes,
+                    AzureModule.AzureServiceManagement.ToString());
             }
 
             if (!string.IsNullOrEmpty(this.ActiveDirectoryUserId))

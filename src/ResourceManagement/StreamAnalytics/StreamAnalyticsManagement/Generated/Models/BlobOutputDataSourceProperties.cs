@@ -22,7 +22,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Hyak.Common;
 using Microsoft.Azure.Management.StreamAnalytics.Models;
 
 namespace Microsoft.Azure.Management.StreamAnalytics.Models
@@ -72,7 +71,6 @@ namespace Microsoft.Azure.Management.StreamAnalytics.Models
         /// </summary>
         public BlobOutputDataSourceProperties()
         {
-            this.StorageAccounts = new LazyList<StorageAccount>();
         }
     }
 }

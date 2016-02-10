@@ -15,8 +15,6 @@
 using Microsoft.Azure.Management.DataLake.Store;
 using Microsoft.Azure.Management.Resources;
 using Microsoft.Azure.Test;
-using Microsoft.Rest.ClientRuntime.Azure.TestFramework;
-using System.Net.Http;
 
 namespace DataLakeStore.Tests
 {
@@ -27,9 +25,9 @@ namespace DataLakeStore.Tests
         /// </summary>
         /// <param name="testBase">the test class</param>
         /// <returns>A redis cache management client, created from the current context (environment variables)</returns>
-        public static DataLakeStoreManagementClient GetDataLakeStoreManagementClient(this TestBase testBase, MockContext context)
+        public static IDataLakeStoreManagementClient GetDataLakeStoreManagementClient(this TestBase testBase)
         {
-            return context.GetServiceClient<DataLakeStoreManagementClient>();
+            return TestBase.GetServiceClient<DataLakeStoreManagementClient>(new CSMTestEnvironmentFactory());
         }
 
         /// <summary>
@@ -37,24 +35,9 @@ namespace DataLakeStore.Tests
         /// </summary>
         /// <param name="testBase">the test class</param>
         /// <returns>A resource management client, created from the current context (environment variables)</returns>
-        public static ResourceManagementClient GetResourceManagementClient(this TestBase testBase, MockContext context)
+        public static ResourceManagementClient GetResourceManagementClient(this TestBase testBase)
         {
-            return context.GetServiceClient<ResourceManagementClient>();
-        }
-
-        /// <summary>
-        /// Default constructor for management clients, using the TestSupport Infrastructure
-        /// </summary>
-        /// <param name="testBase">the test class</param>
-        /// <returns>A redis cache management client, created from the current context (environment variables)</returns>
-        public static DataLakeStoreFileSystemManagementClient GetDataLakeStoreFileSystemManagementClient(this TestBase testBase, MockContext context)
-        {
-            var client = context.GetServiceClient<DataLakeStoreFileSystemManagementClient>();
-            
-            // reset this back to the default.
-            client.BaseUri = new System.Uri("https://accountname.datalakeserviceuri");
-            client.Datalakeserviceuri = TestEnvironmentFactory.GetTestEnvironment().Endpoints.DataLakeStoreServiceUri.OriginalString.Replace("https://", "");
-            return client;
+            return TestBase.GetServiceClient<ResourceManagementClient>(new CSMTestEnvironmentFactory());
         }
     }
 }

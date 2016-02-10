@@ -73,7 +73,8 @@ namespace Microsoft.Azure.Management.DataLake.StoreUploader.Tests
             {
                 var msu = new MultipleSegmentUploader(metadata, 1, fe);
                 msu.UseSegmentBlockBackOffRetryStrategy = false;
-                msu.Upload();
+
+                Assert.DoesNotThrow(() => { msu.Upload(); });
                 VerifyTargetStreamsAreComplete(metadata, fe);
             }
             finally
@@ -94,7 +95,8 @@ namespace Microsoft.Azure.Management.DataLake.StoreUploader.Tests
             {
                 var msu = new MultipleSegmentUploader(metadata, 1, fe);
                 msu.UseSegmentBlockBackOffRetryStrategy = false;
-                msu.Upload();
+
+                Assert.DoesNotThrow(() => { msu.Upload(); });
                 VerifyTargetStreamsAreComplete(metadata, fe);
             }
             finally
@@ -116,7 +118,8 @@ namespace Microsoft.Azure.Management.DataLake.StoreUploader.Tests
             {
                 var msu = new MultipleSegmentUploader(metadata, threadCount, fe);
                 msu.UseSegmentBlockBackOffRetryStrategy = false;
-                msu.Upload();
+
+                Assert.DoesNotThrow(() => { msu.Upload(); });
                 VerifyTargetStreamsAreComplete(metadata, fe);
             }
             finally
@@ -140,7 +143,8 @@ namespace Microsoft.Azure.Management.DataLake.StoreUploader.Tests
             {
                 var msu = new MultipleSegmentUploader(metadata, 1, fe);
                 msu.UseSegmentBlockBackOffRetryStrategy = false;
-                msu.Upload();
+
+                Assert.DoesNotThrow(() => { msu.Upload(); });
                 VerifyTargetStreamsAreComplete(metadata, fe);
 
                 //delete about 50% of segments
@@ -156,7 +160,7 @@ namespace Microsoft.Azure.Management.DataLake.StoreUploader.Tests
 
                 //re-upload everything
                 msu = new MultipleSegmentUploader(metadata, 1, fe);
-                msu.Upload();
+                Assert.DoesNotThrow(() => { msu.Upload(); });
                 VerifyTargetStreamsAreComplete(metadata, fe);
             }
             finally
@@ -224,7 +228,7 @@ namespace Microsoft.Azure.Management.DataLake.StoreUploader.Tests
                 if (expectSuccess)
                 {
                     //the Upload method should not throw any exceptions in this case
-                    msu.Upload();
+                    Assert.DoesNotThrow(() => { msu.Upload(); });
                     
                     //if we are expecting success, verify that both the metadata and the target streams are complete
                     VerifyTargetStreamsAreComplete(metadata, workingFrontEnd);

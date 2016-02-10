@@ -13,7 +13,6 @@
 // limitations under the License.
 //
 using Microsoft.Azure.Test;
-using Microsoft.Rest.ClientRuntime.Azure.TestFramework;
 using System;
 
 namespace DataLakeAnalytics.Tests
@@ -21,7 +20,6 @@ namespace DataLakeAnalytics.Tests
     public class CommonTestFixture : TestBase
     {
         public string ResourceGroupName { set; get; }
-        public string SecondDataLakeAnalyticsAccountName { get; set; }
         public string DataLakeAnalyticsAccountName { get; set; }
         public string SecondDataLakeStoreAccountName { get; set; }
         public string StorageAccountAccessKey { get; set; }
@@ -30,66 +28,28 @@ namespace DataLakeAnalytics.Tests
         public string SecondDataLakeStoreAccountSuffix { get; set; }
         public string DataLakeStoreAccountName { get; set; }
         public string DataLakeStoreAccountSuffix { get; set; }
-        public string DatabaseName { get; set; }
-        public string TableName { get; set; }
-        public string TvfName { get; set; }
-        public string ViewName { get; set; }
-        public string ProcName { get; set; }
-        public string SecretName { get; set; }
-        public string SecretPwd { get; set; }
-        public string CredentialName { get; set; }
-        public string HostUrl { get; set; }
         public string Location = "East US 2";
-        public DataLakeAnalyticsManagementHelper DataLakeAnalyticsManagementHelper { get; set; }
-        private MockContext context;
-        public CommonTestFixture(MockContext contextToUse, bool createWasbAccount = false)
-        {
-            try 
-            {
-                context = contextToUse;
-                DataLakeAnalyticsManagementHelper = new DataLakeAnalyticsManagementHelper(this, context);
-                DataLakeAnalyticsManagementHelper.TryRegisterSubscriptionForResource();
-                DataLakeAnalyticsManagementHelper.TryRegisterSubscriptionForResource("Microsoft.Storage");
-                DataLakeAnalyticsManagementHelper.TryRegisterSubscriptionForResource("Microsoft.DataLakeStore");
-                ResourceGroupName = TestUtilities.GenerateName("rgaba1");
-                DataLakeAnalyticsAccountName = TestUtilities.GenerateName("testaba1");
-                SecondDataLakeAnalyticsAccountName = TestUtilities.GenerateName("testaba2");
-                SecondDataLakeStoreAccountName = TestUtilities.GenerateName("teststorage1");
-                DataLakeStoreAccountName = TestUtilities.GenerateName("testdatalake1");
-                SecondDataLakeStoreAccountName = TestUtilities.GenerateName("testdatalake2");
-                StorageAccountName = TestUtilities.GenerateName("testazureblob1");
-                DatabaseName = TestUtilities.GenerateName("testdb1");
-                TableName = TestUtilities.GenerateName("testtbl1");
-                TvfName = TestUtilities.GenerateName("testtvf1");
-                ProcName = TestUtilities.GenerateName("testproc1");
-                ViewName = TestUtilities.GenerateName("testview1");
-                CredentialName = TestUtilities.GenerateName("testcred1");
-                SecretName = TestUtilities.GenerateName("testsecret1");
-                SecretPwd = TestUtilities.GenerateName("testsecretpwd1");
-                DataLakeAnalyticsManagementHelper.TryCreateResourceGroup(ResourceGroupName, Location);
-                if (createWasbAccount)
-                {
-                    string storageSuffix;
-                    this.StorageAccountAccessKey = DataLakeAnalyticsManagementHelper.TryCreateStorageAccount(this.ResourceGroupName, this.StorageAccountName, "DataLakeAnalyticsTestStorage", "DataLakeAnalyticsTestStorageDescription", this.Location, out storageSuffix);
-                    this.StorageAccountSuffix = storageSuffix;
-                }
 
-                this.DataLakeStoreAccountSuffix = DataLakeAnalyticsManagementHelper.TryCreateDataLakeStoreAccount(this.ResourceGroupName, this.Location, this.DataLakeStoreAccountName);
-                this.SecondDataLakeStoreAccountSuffix = DataLakeAnalyticsManagementHelper.TryCreateDataLakeStoreAccount(this.ResourceGroupName, this.Location, this.SecondDataLakeStoreAccountName);
-            }
-            catch
-            {
-                Cleanup();
-                throw;
-            }
-        }
-
-        private void Cleanup()
+        public CommonTestFixture()
         {
-            if (context != null)
-            {
-                context.Dispose();
-            }
+            var bigAnalyticsManagementHelper = new DataLakeAnalyticsManagementHelper(this);
+            bigAnalyticsManagementHelper.TryRegisterSubscriptionForResource();
+            bigAnalyticsManagementHelper.TryRegisterSubscriptionForResource("Microsoft.Storage");
+            bigAnalyticsManagementHelper.TryRegisterSubscriptionForResource("Microsoft.DataLake");
+            ResourceGroupName = TestUtilities.GenerateName("rgaba1");
+            DataLakeAnalyticsAccountName = TestUtilities.GenerateName("testaba1");
+            SecondDataLakeStoreAccountName = TestUtilities.GenerateName("teststorage1");
+            DataLakeStoreAccountName = TestUtilities.GenerateName("testdatalake1");
+            SecondDataLakeStoreAccountName = TestUtilities.GenerateName("testdatalake2");
+            StorageAccountName = TestUtilities.GenerateName("testazureblob1");
+            bigAnalyticsManagementHelper.TryCreateResourceGroup(ResourceGroupName, Location);
+            
+            string storageSuffix;
+            this.StorageAccountAccessKey = bigAnalyticsManagementHelper.TryCreateStorageAccount(this.ResourceGroupName, this.StorageAccountName, "DataLakeAnalyticsTestStorage", "DataLakeAnalyticsTestStorageDescription", this.Location, out storageSuffix);
+            this.StorageAccountSuffix = storageSuffix;
+
+            this.DataLakeStoreAccountSuffix = bigAnalyticsManagementHelper.TryCreateDataLakeAccount(this.ResourceGroupName, this.DataLakeStoreAccountName, this.Location);
+            this.SecondDataLakeStoreAccountSuffix = bigAnalyticsManagementHelper.TryCreateDataLakeAccount(this.ResourceGroupName, this.SecondDataLakeStoreAccountName, this.Location);
         }
     }
 }

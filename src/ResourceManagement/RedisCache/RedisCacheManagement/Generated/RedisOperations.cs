@@ -106,10 +106,6 @@ namespace Microsoft.Azure.Management.Redis
             {
                 throw new ArgumentNullException("parameters.Properties");
             }
-            if (parameters.Properties.RedisVersion == null)
-            {
-                throw new ArgumentNullException("parameters.Properties.RedisVersion");
-            }
             if (parameters.Properties.Sku == null)
             {
                 throw new ArgumentNullException("parameters.Properties.Sku");
@@ -150,7 +146,7 @@ namespace Microsoft.Azure.Management.Redis
             url = url + "/Redis/";
             url = url + Uri.EscapeDataString(name);
             List<string> queryParameters = new List<string>();
-            queryParameters.Add("api-version=2015-03-01");
+            queryParameters.Add("api-version=2015-08-01");
             if (queryParameters.Count > 0)
             {
                 url = url + "?" + string.Join("&", queryParameters);
@@ -192,7 +188,10 @@ namespace Microsoft.Azure.Management.Redis
                 JObject propertiesValue = new JObject();
                 redisCreateOrUpdateParametersValue["properties"] = propertiesValue;
                 
-                propertiesValue["redisVersion"] = parameters.Properties.RedisVersion;
+                if (parameters.Properties.RedisVersion != null)
+                {
+                    propertiesValue["redisVersion"] = parameters.Properties.RedisVersion;
+                }
                 
                 JObject skuValue = new JObject();
                 propertiesValue["sku"] = skuValue;
@@ -220,15 +219,50 @@ namespace Microsoft.Azure.Management.Redis
                 
                 propertiesValue["enableNonSslPort"] = parameters.Properties.EnableNonSslPort;
                 
+                if (parameters.Properties.TenantSettings != null)
+                {
+                    if (parameters.Properties.TenantSettings is ILazyCollection == false || ((ILazyCollection)parameters.Properties.TenantSettings).IsInitialized)
+                    {
+                        JObject tenantSettingsDictionary = new JObject();
+                        foreach (KeyValuePair<string, string> pair2 in parameters.Properties.TenantSettings)
+                        {
+                            string tenantSettingsKey = pair2.Key;
+                            string tenantSettingsValue = pair2.Value;
+                            tenantSettingsDictionary[tenantSettingsKey] = tenantSettingsValue;
+                        }
+                        propertiesValue["tenantSettings"] = tenantSettingsDictionary;
+                    }
+                }
+                
+                if (parameters.Properties.ShardCount != null)
+                {
+                    propertiesValue["shardCount"] = parameters.Properties.ShardCount.Value;
+                }
+                
+                if (parameters.Properties.VirtualNetwork != null)
+                {
+                    propertiesValue["virtualNetwork"] = parameters.Properties.VirtualNetwork;
+                }
+                
+                if (parameters.Properties.Subnet != null)
+                {
+                    propertiesValue["subnet"] = parameters.Properties.Subnet;
+                }
+                
+                if (parameters.Properties.StaticIP != null)
+                {
+                    propertiesValue["staticIP"] = parameters.Properties.StaticIP;
+                }
+                
                 redisCreateOrUpdateParametersValue["location"] = parameters.Location;
                 
                 if (parameters.Tags != null)
                 {
                     JObject tagsDictionary = new JObject();
-                    foreach (KeyValuePair<string, string> pair2 in parameters.Tags)
+                    foreach (KeyValuePair<string, string> pair3 in parameters.Tags)
                     {
-                        string tagsKey = pair2.Key;
-                        string tagsValue = pair2.Value;
+                        string tagsKey = pair3.Key;
+                        string tagsValue = pair3.Value;
                         tagsDictionary[tagsKey] = tagsValue;
                     }
                     redisCreateOrUpdateParametersValue["tags"] = tagsDictionary;
@@ -390,6 +424,45 @@ namespace Microsoft.Azure.Management.Redis
                                     bool enableNonSslPortInstance = ((bool)enableNonSslPortValue);
                                     propertiesInstance.EnableNonSslPort = enableNonSslPortInstance;
                                 }
+                                
+                                JToken tenantSettingsSequenceElement = ((JToken)propertiesValue2["tenantSettings"]);
+                                if (tenantSettingsSequenceElement != null && tenantSettingsSequenceElement.Type != JTokenType.Null)
+                                {
+                                    foreach (JProperty property2 in tenantSettingsSequenceElement)
+                                    {
+                                        string tenantSettingsKey2 = ((string)property2.Name);
+                                        string tenantSettingsValue2 = ((string)property2.Value);
+                                        propertiesInstance.TenantSettings.Add(tenantSettingsKey2, tenantSettingsValue2);
+                                    }
+                                }
+                                
+                                JToken shardCountValue = propertiesValue2["shardCount"];
+                                if (shardCountValue != null && shardCountValue.Type != JTokenType.Null)
+                                {
+                                    int shardCountInstance = ((int)shardCountValue);
+                                    propertiesInstance.ShardCount = shardCountInstance;
+                                }
+                                
+                                JToken virtualNetworkValue = propertiesValue2["virtualNetwork"];
+                                if (virtualNetworkValue != null && virtualNetworkValue.Type != JTokenType.Null)
+                                {
+                                    string virtualNetworkInstance = ((string)virtualNetworkValue);
+                                    propertiesInstance.VirtualNetwork = virtualNetworkInstance;
+                                }
+                                
+                                JToken subnetValue = propertiesValue2["subnet"];
+                                if (subnetValue != null && subnetValue.Type != JTokenType.Null)
+                                {
+                                    string subnetInstance = ((string)subnetValue);
+                                    propertiesInstance.Subnet = subnetInstance;
+                                }
+                                
+                                JToken staticIPValue = propertiesValue2["staticIP"];
+                                if (staticIPValue != null && staticIPValue.Type != JTokenType.Null)
+                                {
+                                    string staticIPInstance = ((string)staticIPValue);
+                                    propertiesInstance.StaticIP = staticIPInstance;
+                                }
                             }
                             
                             JToken idValue = responseDoc["id"];
@@ -423,10 +496,10 @@ namespace Microsoft.Azure.Management.Redis
                             JToken tagsSequenceElement = ((JToken)responseDoc["tags"]);
                             if (tagsSequenceElement != null && tagsSequenceElement.Type != JTokenType.Null)
                             {
-                                foreach (JProperty property2 in tagsSequenceElement)
+                                foreach (JProperty property3 in tagsSequenceElement)
                                 {
-                                    string tagsKey2 = ((string)property2.Name);
-                                    string tagsValue2 = ((string)property2.Value);
+                                    string tagsKey2 = ((string)property3.Name);
+                                    string tagsValue2 = ((string)property3.Value);
                                     resourceInstance.Tags.Add(tagsKey2, tagsValue2);
                                 }
                             }
@@ -516,7 +589,7 @@ namespace Microsoft.Azure.Management.Redis
             url = url + "/Redis/";
             url = url + Uri.EscapeDataString(name);
             List<string> queryParameters = new List<string>();
-            queryParameters.Add("api-version=2015-03-01");
+            queryParameters.Add("api-version=2015-08-01");
             if (queryParameters.Count > 0)
             {
                 url = url + "?" + string.Join("&", queryParameters);
@@ -660,7 +733,7 @@ namespace Microsoft.Azure.Management.Redis
             url = url + "/Redis/";
             url = url + Uri.EscapeDataString(name);
             List<string> queryParameters = new List<string>();
-            queryParameters.Add("api-version=2015-03-01");
+            queryParameters.Add("api-version=2015-08-01");
             if (queryParameters.Count > 0)
             {
                 url = url + "?" + string.Join("&", queryParameters);
@@ -823,6 +896,45 @@ namespace Microsoft.Azure.Management.Redis
                                     bool enableNonSslPortInstance = ((bool)enableNonSslPortValue);
                                     propertiesInstance.EnableNonSslPort = enableNonSslPortInstance;
                                 }
+                                
+                                JToken tenantSettingsSequenceElement = ((JToken)propertiesValue["tenantSettings"]);
+                                if (tenantSettingsSequenceElement != null && tenantSettingsSequenceElement.Type != JTokenType.Null)
+                                {
+                                    foreach (JProperty property2 in tenantSettingsSequenceElement)
+                                    {
+                                        string tenantSettingsKey = ((string)property2.Name);
+                                        string tenantSettingsValue = ((string)property2.Value);
+                                        propertiesInstance.TenantSettings.Add(tenantSettingsKey, tenantSettingsValue);
+                                    }
+                                }
+                                
+                                JToken shardCountValue = propertiesValue["shardCount"];
+                                if (shardCountValue != null && shardCountValue.Type != JTokenType.Null)
+                                {
+                                    int shardCountInstance = ((int)shardCountValue);
+                                    propertiesInstance.ShardCount = shardCountInstance;
+                                }
+                                
+                                JToken virtualNetworkValue = propertiesValue["virtualNetwork"];
+                                if (virtualNetworkValue != null && virtualNetworkValue.Type != JTokenType.Null)
+                                {
+                                    string virtualNetworkInstance = ((string)virtualNetworkValue);
+                                    propertiesInstance.VirtualNetwork = virtualNetworkInstance;
+                                }
+                                
+                                JToken subnetValue = propertiesValue["subnet"];
+                                if (subnetValue != null && subnetValue.Type != JTokenType.Null)
+                                {
+                                    string subnetInstance = ((string)subnetValue);
+                                    propertiesInstance.Subnet = subnetInstance;
+                                }
+                                
+                                JToken staticIPValue = propertiesValue["staticIP"];
+                                if (staticIPValue != null && staticIPValue.Type != JTokenType.Null)
+                                {
+                                    string staticIPInstance = ((string)staticIPValue);
+                                    propertiesInstance.StaticIP = staticIPInstance;
+                                }
                             }
                             
                             JToken idValue = responseDoc["id"];
@@ -856,10 +968,10 @@ namespace Microsoft.Azure.Management.Redis
                             JToken tagsSequenceElement = ((JToken)responseDoc["tags"]);
                             if (tagsSequenceElement != null && tagsSequenceElement.Type != JTokenType.Null)
                             {
-                                foreach (JProperty property2 in tagsSequenceElement)
+                                foreach (JProperty property3 in tagsSequenceElement)
                                 {
-                                    string tagsKey = ((string)property2.Name);
-                                    string tagsValue = ((string)property2.Value);
+                                    string tagsKey = ((string)property3.Name);
+                                    string tagsValue = ((string)property3.Value);
                                     resourceInstance.Tags.Add(tagsKey, tagsValue);
                                 }
                             }
@@ -938,7 +1050,7 @@ namespace Microsoft.Azure.Management.Redis
             url = url + "Microsoft.Cache";
             url = url + "/Redis/";
             List<string> queryParameters = new List<string>();
-            queryParameters.Add("api-version=2015-03-01");
+            queryParameters.Add("api-version=2015-08-01");
             if (queryParameters.Count > 0)
             {
                 url = url + "?" + string.Join("&", queryParameters);
@@ -1106,6 +1218,45 @@ namespace Microsoft.Azure.Management.Redis
                                             bool enableNonSslPortInstance = ((bool)enableNonSslPortValue);
                                             propertiesInstance.EnableNonSslPort = enableNonSslPortInstance;
                                         }
+                                        
+                                        JToken tenantSettingsSequenceElement = ((JToken)propertiesValue["tenantSettings"]);
+                                        if (tenantSettingsSequenceElement != null && tenantSettingsSequenceElement.Type != JTokenType.Null)
+                                        {
+                                            foreach (JProperty property2 in tenantSettingsSequenceElement)
+                                            {
+                                                string tenantSettingsKey = ((string)property2.Name);
+                                                string tenantSettingsValue = ((string)property2.Value);
+                                                propertiesInstance.TenantSettings.Add(tenantSettingsKey, tenantSettingsValue);
+                                            }
+                                        }
+                                        
+                                        JToken shardCountValue = propertiesValue["shardCount"];
+                                        if (shardCountValue != null && shardCountValue.Type != JTokenType.Null)
+                                        {
+                                            int shardCountInstance = ((int)shardCountValue);
+                                            propertiesInstance.ShardCount = shardCountInstance;
+                                        }
+                                        
+                                        JToken virtualNetworkValue = propertiesValue["virtualNetwork"];
+                                        if (virtualNetworkValue != null && virtualNetworkValue.Type != JTokenType.Null)
+                                        {
+                                            string virtualNetworkInstance = ((string)virtualNetworkValue);
+                                            propertiesInstance.VirtualNetwork = virtualNetworkInstance;
+                                        }
+                                        
+                                        JToken subnetValue = propertiesValue["subnet"];
+                                        if (subnetValue != null && subnetValue.Type != JTokenType.Null)
+                                        {
+                                            string subnetInstance = ((string)subnetValue);
+                                            propertiesInstance.Subnet = subnetInstance;
+                                        }
+                                        
+                                        JToken staticIPValue = propertiesValue["staticIP"];
+                                        if (staticIPValue != null && staticIPValue.Type != JTokenType.Null)
+                                        {
+                                            string staticIPInstance = ((string)staticIPValue);
+                                            propertiesInstance.StaticIP = staticIPInstance;
+                                        }
                                     }
                                     
                                     JToken idValue = valueValue["id"];
@@ -1139,10 +1290,10 @@ namespace Microsoft.Azure.Management.Redis
                                     JToken tagsSequenceElement = ((JToken)valueValue["tags"]);
                                     if (tagsSequenceElement != null && tagsSequenceElement.Type != JTokenType.Null)
                                     {
-                                        foreach (JProperty property2 in tagsSequenceElement)
+                                        foreach (JProperty property3 in tagsSequenceElement)
                                         {
-                                            string tagsKey = ((string)property2.Name);
-                                            string tagsValue = ((string)property2.Value);
+                                            string tagsKey = ((string)property3.Name);
+                                            string tagsValue = ((string)property3.Value);
                                             redisResourceInstance.Tags.Add(tagsKey, tagsValue);
                                         }
                                     }
@@ -1242,7 +1393,7 @@ namespace Microsoft.Azure.Management.Redis
             url = url + Uri.EscapeDataString(name);
             url = url + "/listKeys";
             List<string> queryParameters = new List<string>();
-            queryParameters.Add("api-version=2015-03-01");
+            queryParameters.Add("api-version=2015-08-01");
             if (queryParameters.Count > 0)
             {
                 url = url + "?" + string.Join("&", queryParameters);
@@ -1548,6 +1699,45 @@ namespace Microsoft.Azure.Management.Redis
                                             bool enableNonSslPortInstance = ((bool)enableNonSslPortValue);
                                             propertiesInstance.EnableNonSslPort = enableNonSslPortInstance;
                                         }
+                                        
+                                        JToken tenantSettingsSequenceElement = ((JToken)propertiesValue["tenantSettings"]);
+                                        if (tenantSettingsSequenceElement != null && tenantSettingsSequenceElement.Type != JTokenType.Null)
+                                        {
+                                            foreach (JProperty property2 in tenantSettingsSequenceElement)
+                                            {
+                                                string tenantSettingsKey = ((string)property2.Name);
+                                                string tenantSettingsValue = ((string)property2.Value);
+                                                propertiesInstance.TenantSettings.Add(tenantSettingsKey, tenantSettingsValue);
+                                            }
+                                        }
+                                        
+                                        JToken shardCountValue = propertiesValue["shardCount"];
+                                        if (shardCountValue != null && shardCountValue.Type != JTokenType.Null)
+                                        {
+                                            int shardCountInstance = ((int)shardCountValue);
+                                            propertiesInstance.ShardCount = shardCountInstance;
+                                        }
+                                        
+                                        JToken virtualNetworkValue = propertiesValue["virtualNetwork"];
+                                        if (virtualNetworkValue != null && virtualNetworkValue.Type != JTokenType.Null)
+                                        {
+                                            string virtualNetworkInstance = ((string)virtualNetworkValue);
+                                            propertiesInstance.VirtualNetwork = virtualNetworkInstance;
+                                        }
+                                        
+                                        JToken subnetValue = propertiesValue["subnet"];
+                                        if (subnetValue != null && subnetValue.Type != JTokenType.Null)
+                                        {
+                                            string subnetInstance = ((string)subnetValue);
+                                            propertiesInstance.Subnet = subnetInstance;
+                                        }
+                                        
+                                        JToken staticIPValue = propertiesValue["staticIP"];
+                                        if (staticIPValue != null && staticIPValue.Type != JTokenType.Null)
+                                        {
+                                            string staticIPInstance = ((string)staticIPValue);
+                                            propertiesInstance.StaticIP = staticIPInstance;
+                                        }
                                     }
                                     
                                     JToken idValue = valueValue["id"];
@@ -1581,10 +1771,10 @@ namespace Microsoft.Azure.Management.Redis
                                     JToken tagsSequenceElement = ((JToken)valueValue["tags"]);
                                     if (tagsSequenceElement != null && tagsSequenceElement.Type != JTokenType.Null)
                                     {
-                                        foreach (JProperty property2 in tagsSequenceElement)
+                                        foreach (JProperty property3 in tagsSequenceElement)
                                         {
-                                            string tagsKey = ((string)property2.Name);
-                                            string tagsValue = ((string)property2.Value);
+                                            string tagsKey = ((string)property3.Name);
+                                            string tagsValue = ((string)property3.Value);
                                             redisResourceInstance.Tags.Add(tagsKey, tagsValue);
                                         }
                                     }
@@ -1693,7 +1883,7 @@ namespace Microsoft.Azure.Management.Redis
             url = url + Uri.EscapeDataString(name);
             url = url + "/regenerateKey";
             List<string> queryParameters = new List<string>();
-            queryParameters.Add("api-version=2015-03-01");
+            queryParameters.Add("api-version=2015-08-01");
             if (queryParameters.Count > 0)
             {
                 url = url + "?" + string.Join("&", queryParameters);

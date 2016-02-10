@@ -1,20 +1,31 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for
-// license information.
+﻿// 
+// Copyright (c) Microsoft.  All rights reserved. 
+// 
+// Licensed under the Apache License, Version 2.0 (the "License"); 
+// you may not use this file except in compliance with the License. 
+// You may obtain a copy of the License at 
+//   http://www.apache.org/licenses/LICENSE-2.0 
+// 
+// Unless required by applicable law or agreed to in writing, software 
+// distributed under the License is distributed on an "AS IS" BASIS, 
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
+// See the License for the specific language governing permissions and 
+// limitations under the License. 
+// 
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using Hyak.Common;
+using Microsoft.Azure.Search.Models;
+using Microsoft.Azure.Search.Tests.Utilities;
+using Microsoft.Azure.Test;
+using Microsoft.Azure.Test.TestCategories;
+using Xunit;
 
 namespace Microsoft.Azure.Search.Tests
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Net;
-    using Microsoft.Azure.Search.Models;
-    using Microsoft.Azure.Search.Tests.Utilities;
-    using Microsoft.Rest;
-    using Microsoft.Rest.Azure;
-    using Microsoft.Spatial;
-    using Xunit;
-
     // MAINTENANCE NOTE: Test methods (those marked with [Fact]) need to be in the derived classes in order for
     // the mock recording/playback to work properly.
     public abstract class SearchTests : QueryTests
@@ -22,8 +33,9 @@ namespace Microsoft.Azure.Search.Tests
         protected void TestCanSearchStaticallyTypedDocuments()
         {
             SearchIndexClient client = GetClientForQuery();
-            DocumentSearchResult<Hotel> response = client.Documents.Search<Hotel>("*");
+            DocumentSearchResponse<Hotel> response = client.Documents.Search<Hotel>("*");
 
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Null(response.ContinuationToken);
             Assert.Null(response.Count);
             Assert.Null(response.Coverage);
@@ -44,8 +56,9 @@ namespace Microsoft.Azure.Search.Tests
         protected void TestCanSearchDynamicDocuments()
         {
             SearchIndexClient client = GetClientForQuery();
-            DocumentSearchResult response = client.Documents.Search("*");
+            DocumentSearchResponse response = client.Documents.Search("*");
 
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Null(response.ContinuationToken);
             Assert.Null(response.Count);
             Assert.Null(response.Coverage);
@@ -79,7 +92,7 @@ namespace Microsoft.Azure.Search.Tests
         protected void TestDefaultSearchModeIsAny()
         {
             SearchIndexClient client = GetClientForQuery();
-            DocumentSearchResult<Hotel> response = 
+            DocumentSearchResponse<Hotel> response = 
                 client.Documents.Search<Hotel>("Cheapest hotel");
 
             AssertContainsKeys(response, "1", "2", "3");
@@ -89,14 +102,8 @@ namespace Microsoft.Azure.Search.Tests
         {
             SearchIndexClient client = GetClientForQuery();
 
-            var searchParameters = 
-                new SearchParameters()
-                {
-                    QueryType = QueryType.Simple,   // Set explicitly at least once for test coverage.
-                    SearchMode = SearchMode.All
-                };
-
-            DocumentSearchResult<Hotel> response =
+            var searchParameters = new SearchParameters() { SearchMode = SearchMode.All };
+            DocumentSearchResponse<Hotel> response =
                 client.Documents.Search<Hotel>("Cheapest hotel", searchParameters);
 
             AssertKeySequenceEqual(response, "2");
@@ -107,9 +114,10 @@ namespace Microsoft.Azure.Search.Tests
             SearchIndexClient client = GetClientForQuery();
 
             var searchParameters = new SearchParameters() { IncludeTotalResultCount = true };
-            DocumentSearchResult<Hotel> response =
+            DocumentSearchResponse<Hotel> response =
                 client.Documents.Search<Hotel>("*", searchParameters);
 
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.NotNull(response.Results);
             Assert.Equal(Data.TestDocuments.Length, response.Count);
         }
@@ -122,7 +130,7 @@ namespace Microsoft.Azure.Search.Tests
                 new SearchParameters() { Filter = "rating gt 3 and lastRenovationDate gt 2000-01-01T00:00:00Z" };
 
             // Also test that searchText can be null.
-            DocumentSearchResult<Hotel> response =
+            DocumentSearchResponse<Hotel> response =
                 client.Documents.Search<Hotel>(null, searchParameters);
 
             AssertKeySequenceEqual(response, "1", "5");
@@ -140,21 +148,22 @@ namespace Microsoft.Azure.Search.Tests
                 { 
                     Filter = "rating eq 5",
                     HighlightPreTag = "<b>",
-                    HighlightPostTag = "</b>",
-                    HighlightFields = new[] { Description, Category }
+                    HighlightPostTag = "</b>"
                 };
-              
-            DocumentSearchResult<Hotel> response = 
+                
+            // Try using the collection without initializing it to make sure it is lazily initialized.
+            searchParameters.HighlightFields.Add(Description);
+            searchParameters.HighlightFields.Add(Category);
+
+            DocumentSearchResponse<Hotel> response = 
                 client.Documents.Search<Hotel>("luxury hotel", searchParameters);
                 
             AssertKeySequenceEqual(response, "1");
 
             HitHighlights highlights = response.Results[0].Highlights;
             Assert.NotNull(highlights);
-            Assert.Equal(2, highlights.Keys.Count);
-            Assert.Contains(Description, highlights.Keys);
-            Assert.Contains(Category, highlights.Keys);
-            
+            SearchAssert.SequenceEqual(new[] { Description, Category }, highlights.Keys);
+
             string categoryHighlight = highlights[Category].Single();
             Assert.Equal("<b>Luxury</b>", categoryHighlight);
 
@@ -182,8 +191,8 @@ namespace Microsoft.Azure.Search.Tests
                         "geo.distance(location, geography'POINT(-122.0 49.0)')"
                     }
                 };
-
-            DocumentSearchResult<Hotel> response =
+                
+            DocumentSearchResponse<Hotel> response =
                 client.Documents.Search<Hotel>("*", searchParameters);
 
             AssertKeySequenceEqual(response, "1", "4", "3", "5", "2", "6");
@@ -194,7 +203,7 @@ namespace Microsoft.Azure.Search.Tests
             SearchIndexClient client = GetClientForQuery();
 
             var searchParameters = new SearchParameters() { Filter = "baseRate gt 190" };
-            DocumentSearchResult<Hotel> response =
+            DocumentSearchResponse<Hotel> response =
                 client.Documents.Search<Hotel>("surprisingly expensive hotel", searchParameters);
 
             AssertKeySequenceEqual(response, "6", "1");
@@ -212,32 +221,12 @@ namespace Microsoft.Azure.Search.Tests
                     Select = new[] { "hotelName", "baseRate" }
                 };
 
-            DocumentSearchResult<Hotel> response =
+            DocumentSearchResponse<Hotel> response =
                 client.Documents.Search<Hotel>("fancy luxury", searchParameters);
 
             var expectedDoc = new Hotel() { HotelName = "Fancy Stay", BaseRate = 199.0 };
 
-            Assert.NotNull(response.Results);
-            Assert.Equal(1, response.Results.Count);
-            Assert.Equal(expectedDoc, response.Results.First().Document);
-        }
-
-        protected void TestCanSearchWithLuceneSyntax()
-        {
-            SearchIndexClient client = GetClientForQuery();
-
-            var searchParameters = 
-                new SearchParameters()
-                {
-                    QueryType = QueryType.Full,
-                    Select = new[] { "hotelName", "baseRate" }
-                };
-
-            DocumentSearchResult<Hotel> response =
-                client.Documents.Search<Hotel>("hotelName:roch~", searchParameters);
-
-            var expectedDoc = new Hotel() { HotelName = "Roach Motel", BaseRate = 79.99 };
-
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.NotNull(response.Results);
             Assert.Equal(1, response.Results.Count);
             Assert.Equal(expectedDoc, response.Results.First().Document);
@@ -248,7 +237,7 @@ namespace Microsoft.Azure.Search.Tests
             SearchIndexClient client = GetClientForQuery();
 
             var searchParameters = new SearchParameters() { Top = 3, Skip = 0, OrderBy = new[] { "hotelId" } };
-            DocumentSearchResult<Hotel> response = client.Documents.Search<Hotel>("*", searchParameters);
+            DocumentSearchResponse<Hotel> response = client.Documents.Search<Hotel>("*", searchParameters);
 
             AssertKeySequenceEqual(response, "1", "2", "3");
 
@@ -266,11 +255,11 @@ namespace Microsoft.Azure.Search.Tests
                 new SearchParameters() 
                 { 
                     ScoringProfile = "nearest", 
-                    ScoringParameters = new[] { new ScoringParameter("myloc", GeographyPoint.Create(49, -122)) },
+                    ScoringParameters = new[] { "myloc:-122,49" },
                     Filter = "rating eq 5 or rating eq 1"
                 };
-
-            DocumentSearchResult<Hotel> response = 
+                
+            DocumentSearchResponse<Hotel> response = 
                 client.Documents.Search<Hotel>("hotel", searchParameters);
             AssertKeySequenceEqual(response, "2", "1");
         }
@@ -289,7 +278,7 @@ namespace Microsoft.Azure.Search.Tests
                     }
                 };
 
-            DocumentSearchResult<Hotel> response = client.Documents.Search<Hotel>("*", searchParameters);
+            DocumentSearchResponse<Hotel> response = client.Documents.Search<Hotel>("*", searchParameters);
             AssertContainsKeys(response, Data.TestDocuments.Select(d => d.HotelId).ToArray());
 
             Assert.NotNull(response.Facets);
@@ -340,7 +329,7 @@ namespace Microsoft.Azure.Search.Tests
                     }
                 };
 
-            DocumentSearchResult<Hotel> response = client.Documents.Search<Hotel>("*", searchParameters);
+            DocumentSearchResponse<Hotel> response = client.Documents.Search<Hotel>("*", searchParameters);
             AssertContainsKeys(response, Data.TestDocuments.Select(d => d.HotelId).ToArray());
 
             Assert.NotNull(response.Facets);
@@ -400,7 +389,7 @@ namespace Microsoft.Azure.Search.Tests
             IEnumerable<string> expectedIds =
                 Data.TestDocuments.Select(d => d.HotelId).Concat(hotelIds).OrderBy(id => id);
 
-            DocumentSearchResult<Hotel> response = client.Documents.Search<Hotel>("*", searchParameters);
+            DocumentSearchResponse<Hotel> response = client.Documents.Search<Hotel>("*", searchParameters);
             AssertKeySequenceEqual(response, expectedIds.Take(1000).ToArray());
 
             Assert.NotNull(response.ContinuationToken);
@@ -438,7 +427,7 @@ namespace Microsoft.Azure.Search.Tests
             IEnumerable<string> expectedIds =
                 Data.TestDocuments.Select(d => d.HotelId).Concat(hotelIds).OrderBy(id => id);
 
-            DocumentSearchResult response = client.Documents.Search("*", searchParameters);
+            DocumentSearchResponse response = client.Documents.Search("*", searchParameters);
             AssertKeySequenceEqual(response, expectedIds.Take(1000).ToArray());
 
             Assert.NotNull(response.ContinuationToken);
@@ -475,7 +464,7 @@ namespace Microsoft.Azure.Search.Tests
             IEnumerable<string> expectedIds =
                 Data.TestDocuments.Select(d => d.HotelId).Concat(hotelIds).OrderBy(id => id);
 
-            DocumentSearchResult<Hotel> response = client.Documents.Search<Hotel>("*", searchParameters);
+            DocumentSearchResponse<Hotel> response = client.Documents.Search<Hotel>("*", searchParameters);
             AssertKeySequenceEqual(response, expectedIds.Take(50).ToArray());
 
             Assert.NotNull(response.ContinuationToken);
@@ -501,8 +490,9 @@ namespace Microsoft.Azure.Search.Tests
             SearchIndexClient client = GetClientForQuery();
 
             var parameters = new SearchParameters() { MinimumCoverage = 50 };
-            DocumentSearchResult<Hotel> response = client.Documents.Search<Hotel>("*", parameters);
+            DocumentSearchResponse<Hotel> response = client.Documents.Search<Hotel>("*", parameters);
 
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal(100, response.Coverage);
         }
 
@@ -510,200 +500,33 @@ namespace Microsoft.Azure.Search.Tests
         {
             SearchServiceClient serviceClient = Data.GetSearchServiceClient();
 
-            Index index = Book.DefineIndex();
-            serviceClient.Indexes.Create(index);
-            SearchIndexClient indexClient = Data.GetSearchIndexClient(index.Name);
+            Index index =
+                new Index()
+                {
+                    Name = TestUtilities.GenerateName(),
+                    Fields = new[]
+                    {
+                        new Field("ISBN", DataType.String) { IsKey = true },
+                        new Field("Title", DataType.String) { IsSearchable = true },
+                        new Field("Author", DataType.String),
+                        new Field("PublishDate", DataType.DateTimeOffset)
+                    }
+                };
+
+            IndexDefinitionResponse createIndexResponse = serviceClient.Indexes.Create(index);
+            SearchIndexClient indexClient = Data.GetSearchIndexClient(createIndexResponse.Index.Name);
 
             var doc1 = new Book() { ISBN = "123", Title = "Lord of the Rings", Author = "J.R.R. Tolkien" };
             var doc2 = new Book() { ISBN = "456", Title = "War and Peace", PublishDate = new DateTime(2015, 8, 18) };
-            var batch = IndexBatch.Upload(new[] { doc1, doc2 });
+            var batch = IndexBatch.Create(IndexAction.Create(doc1), IndexAction.Create(doc2));
                 
             indexClient.Documents.Index(batch);
             SearchTestUtilities.WaitForIndexing();
 
-            DocumentSearchResult<Book> response = indexClient.Documents.Search<Book>("War and Peace");
+            DocumentSearchResponse<Book> response = indexClient.Documents.Search<Book>("War and Peace");
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal(1, response.Results.Count);
             Assert.Equal(doc2, response.Results[0].Document);
-        }
-
-        protected void TestCanRoundTripNonNullableValueTypes()
-        {
-            SearchServiceClient serviceClient = Data.GetSearchServiceClient();
-
-            Index index = new Index()
-            {
-                Name = SearchTestUtilities.GenerateName(),
-                Fields = new[]
-                {
-                    new Field("Key", DataType.String) { IsKey = true },
-                    new Field("Rating", DataType.Int32),
-                    new Field("Count", DataType.Int64),
-                    new Field("IsEnabled", DataType.Boolean),
-                    new Field("Ratio", DataType.Double),
-                    new Field("StartDate", DataType.DateTimeOffset),
-                    new Field("EndDate", DataType.DateTimeOffset)
-                }
-            };
-
-            serviceClient.Indexes.Create(index);
-            SearchIndexClient indexClient = Data.GetSearchIndexClient(index.Name);
-
-            DateTimeOffset startDate = new DateTimeOffset(2015, 11, 24, 14, 01, 00, TimeSpan.FromHours(-8));
-            DateTime endDate = startDate.UtcDateTime + TimeSpan.FromDays(15);
-
-            var doc1 = new NonNullableModel() 
-            { 
-                Key = "123", 
-                Count = 3, 
-                EndDate = endDate, 
-                IsEnabled = true, 
-                Rating = 5, 
-                Ratio = 3.14, 
-                StartDate = startDate
-            };
-
-            var doc2 = new NonNullableModel()
-            {
-                Key = "456",
-                Count = default(long),
-                EndDate = default(DateTime),
-                IsEnabled = default(bool),
-                Rating = default(int),
-                Ratio = default(double),
-                StartDate = default(DateTimeOffset)
-            };
-
-            var batch = IndexBatch.Upload(new[] { doc1, doc2 });
-                
-            indexClient.Documents.Index(batch);
-            SearchTestUtilities.WaitForIndexing();
-
-            DocumentSearchResult<NonNullableModel> response = indexClient.Documents.Search<NonNullableModel>("*");
-            
-            Assert.Equal(2, response.Results.Count);
-            Assert.Equal(doc1, response.Results[0].Document);
-            Assert.Equal(doc2, response.Results[1].Document);
-        }
-
-        protected void TestNullCannotBeConvertedToValueType()
-        {
-            SearchServiceClient serviceClient = Data.GetSearchServiceClient();
-
-            Index index = new Index()
-            {
-                Name = SearchTestUtilities.GenerateName(),
-                Fields = new[]
-                {
-                    new Field("Key", DataType.String) { IsKey = true },
-                    new Field("IntValue", DataType.Int32)
-                }
-            };
-
-            serviceClient.Indexes.Create(index);
-            SearchIndexClient indexClient = Data.GetSearchIndexClient(index.Name);
-
-            var doc = new ModelWithNullableInt()
-            {
-                Key = "123",
-                IntValue = null
-            };
-
-            var batch = IndexBatch.Upload(new[] { doc });
-
-            indexClient.Documents.Index(batch);
-            SearchTestUtilities.WaitForIndexing();
-
-            RestException e = Assert.Throws<RestException>(() => indexClient.Documents.Search<ModelWithInt>("*"));
-            Assert.Contains("Error converting value {null} to type 'System.Int32'. Path 'IntValue'.", e.ToString());
-        }
-
-        protected void TestCanFilterNonNullableType()
-        {
-            SearchServiceClient serviceClient = Data.GetSearchServiceClient();
-
-            Index index = new Index()
-            {
-                Name = SearchTestUtilities.GenerateName(),
-                Fields = new[]
-                {
-                    new Field("Key", DataType.String) { IsKey = true },
-                    new Field("IntValue", DataType.Int32) { IsFilterable = true }
-                }
-            };
-
-            serviceClient.Indexes.Create(index);
-            SearchIndexClient indexClient = Data.GetSearchIndexClient(index.Name);
-
-            var doc = new ModelWithInt() { Key = "123", IntValue = 0 };
-            var batch = IndexBatch.Upload(new[] { doc });
-
-            indexClient.Documents.Index(batch);
-            SearchTestUtilities.WaitForIndexing();
-
-            var parameters = new SearchParameters() { Filter = "IntValue eq 0" };
-            DocumentSearchResult<ModelWithInt> response = indexClient.Documents.Search<ModelWithInt>("*", parameters);
-
-            Assert.Equal(1, response.Results.Count);
-            Assert.Equal(doc.IntValue, response.Results[0].Document.IntValue);
-        }
-
-        protected void TestCanSearchWithCustomContractResolver()
-        {
-            SearchIndexClient client = GetClientForQuery();
-            client.DeserializationSettings.ContractResolver = new MyCustomContractResolver();
-
-            DocumentSearchResult<LoudHotel> response = client.Documents.Search<LoudHotel>("Best");
-
-            Assert.Equal(1, response.Results.Count);
-            Assert.Equal(Data.TestDocuments[0], response.Results[0].Document.ToHotel());
-        }
-
-        protected void TestCanSearchWithCustomConverter()
-        {
-            TestCanSearchWithCustomConverter<CustomBookWithConverter>();
-        }
-
-        protected void TestCanSearchWithCustomConverterViaSettings()
-        {
-            Action<SearchIndexClient> customizeSettings =
-                client =>
-                {
-                    var converter = new CustomBookConverter<CustomBook>();
-                    converter.Install(client);
-                };
-
-            TestCanSearchWithCustomConverter<CustomBook>(customizeSettings);
-        }
-
-        private void TestCanSearchWithCustomConverter<T>(Action<SearchIndexClient> customizeSettings = null)
-            where T : CustomBook, new()
-        {
-            customizeSettings = customizeSettings ?? (client => { });
-
-            SearchServiceClient serviceClient = Data.GetSearchServiceClient();
-
-            Index index = Book.DefineIndex();
-            serviceClient.Indexes.Create(index);
-            SearchIndexClient indexClient = Data.GetSearchIndexClient(index.Name);
-            customizeSettings(indexClient);
-
-            var doc = new T()
-            {
-                InternationalStandardBookNumber = "123",
-                Name = "Lord of the Rings",
-                AuthorName = "J.R.R. Tolkien",
-                PublishDateTime = new DateTime(1954, 7, 29)
-            };
-
-            var batch = IndexBatch.Upload(new[] { doc });
-
-            indexClient.Documents.Index(batch);
-            SearchTestUtilities.WaitForIndexing();
-
-            DocumentSearchResult<T> response = indexClient.Documents.Search<T>("*");
-
-            Assert.Equal(1, response.Results.Count);
-            Assert.Equal(doc, response.Results[0].Document);
         }
 
         private IEnumerable<string> IndexDocuments(SearchIndexClient client, int totalDocCount)
@@ -714,18 +537,19 @@ namespace Microsoft.Azure.Search.Tests
                 Enumerable.Range(existingDocumentCount + 1, totalDocCount - existingDocumentCount)
                 .Select(id => id.ToString());
 
-            List<Hotel> hotels = hotelIds.Select(id => new Hotel() { HotelId = id }).ToList();
+            IEnumerable<Hotel> hotels = hotelIds.Select(id => new Hotel() { HotelId = id });
+            List<IndexAction<Hotel>> actions = hotels.Select(h => IndexAction.Create(h)).ToList();
 
-            for (int i = 0; i < hotels.Count; i += 1000)
+            for (int i = 0; i < actions.Count; i += 1000)
             {
-                IEnumerable<Hotel> nextHotels = hotels.Skip(i).Take(1000);
+                IEnumerable<IndexAction<Hotel>> nextActions = actions.Skip(i).Take(1000);
 
-                if (!nextHotels.Any())
+                if (!nextActions.Any())
                 {
                     break;
                 }
 
-                var batch = IndexBatch.Upload(nextHotels);
+                var batch = IndexBatch.Create(nextActions);
                 client.Documents.Index(batch);
 
                 SearchTestUtilities.WaitForIndexing();
@@ -734,24 +558,27 @@ namespace Microsoft.Azure.Search.Tests
             return hotelIds;
         }
 
-        private void AssertKeySequenceEqual(DocumentSearchResult<Hotel> response, params string[] expectedKeys)
+        private void AssertKeySequenceEqual(DocumentSearchResponse<Hotel> response, params string[] expectedKeys)
         {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.NotNull(response.Results);
 
             IEnumerable<string> actualKeys = response.Results.Select(r => r.Document.HotelId);
             SearchAssert.SequenceEqual(expectedKeys, actualKeys);
         }
 
-        private void AssertKeySequenceEqual(DocumentSearchResult response, params string[] expectedKeys)
+        private void AssertKeySequenceEqual(DocumentSearchResponse response, params string[] expectedKeys)
         {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.NotNull(response.Results);
 
             IEnumerable<string> actualKeys = response.Results.Select(r => (string)r.Document["hotelId"]);
             SearchAssert.SequenceEqual(expectedKeys, actualKeys);
         }
 
-        private void AssertContainsKeys(DocumentSearchResult<Hotel> response, params string[] expectedKeys)
+        private void AssertContainsKeys(DocumentSearchResponse<Hotel> response, params string[] expectedKeys)
         {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.NotNull(response.Results);
 
             IEnumerable<string> actualKeys = response.Results.Select(r => r.Document.HotelId);
@@ -761,8 +588,9 @@ namespace Microsoft.Azure.Search.Tests
             }
         }
 
-        private void AssertContainsKeys(DocumentSearchResult response, params string[] expectedKeys)
+        private void AssertContainsKeys(DocumentSearchResponse response, params string[] expectedKeys)
         {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.NotNull(response.Results);
 
             IEnumerable<string> actualKeys = response.Results.Select(r => (string)r.Document["hotelId"]);
@@ -801,47 +629,6 @@ namespace Microsoft.Azure.Search.Tests
             {
                 Assert.Equal(expectedFacets[i].Value, actualFacets[i].Value);
                 Assert.Equal(expectedFacets[i].Count, actualFacets[i].Count);
-            }
-        }
-
-        private class NonNullableModel
-        {
-            public string Key { get; set; }
-
-            public int Rating { get; set; }
-
-            public long Count { get; set; }
-
-            public bool IsEnabled { get; set; }
-
-            public double Ratio { get; set; }
-
-            public DateTimeOffset StartDate { get; set; }
-
-            public DateTime EndDate { get; set; }
-
-            public override bool Equals(object obj)
-            {
-                NonNullableModel other = obj as NonNullableModel;
-
-                if (other == null)
-                {
-                    return false;
-                }
-
-                return
-                    this.Count == other.Count &&
-                    this.EndDate == other.EndDate &&
-                    this.IsEnabled == other.IsEnabled &&
-                    this.Key == other.Key &&
-                    this.Rating == other.Rating &&
-                    this.Ratio == other.Ratio &&
-                    this.StartDate == other.StartDate;
-            }
-
-            public override int GetHashCode()
-            {
-                return (this.Key != null) ? this.Key.GetHashCode() : 0;
             }
         }
     }

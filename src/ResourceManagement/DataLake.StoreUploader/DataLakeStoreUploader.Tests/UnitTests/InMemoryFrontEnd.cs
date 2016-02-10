@@ -7,8 +7,6 @@
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
-using System.IO;
-
 namespace Microsoft.Azure.Management.DataLake.StoreUploader.Tests
 {
     using System;

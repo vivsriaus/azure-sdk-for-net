@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Management.TrafficManager
             : base()
         {
             this._profiles = new ProfileOperations(this);
-            this._apiVersion = "2015-04-28-preview";
+            this._apiVersion = "2015-11-01";
             this._longRunningOperationInitialTimeout = -1;
             this._longRunningOperationRetryTimeout = -1;
             this.HttpClient.Timeout = TimeSpan.FromSeconds(300);
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Management.TrafficManager
             : base(httpClient)
         {
             this._profiles = new ProfileOperations(this);
-            this._apiVersion = "2015-04-28-preview";
+            this._apiVersion = "2015-11-01";
             this._longRunningOperationInitialTimeout = -1;
             this._longRunningOperationRetryTimeout = -1;
             this.HttpClient.Timeout = TimeSpan.FromSeconds(300);

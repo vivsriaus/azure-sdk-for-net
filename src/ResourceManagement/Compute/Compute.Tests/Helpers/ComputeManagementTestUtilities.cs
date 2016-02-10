@@ -17,7 +17,7 @@ using Microsoft.Azure.Management.Compute;
 using Microsoft.Azure.Management.Network;
 using Microsoft.Azure.Management.Resources;
 using Microsoft.Azure.Management.Storage;
-using Microsoft.Rest.ClientRuntime.Azure.TestFramework;
+using Microsoft.Azure.Test;
 using Microsoft.Azure.Test.HttpRecorder;
 using System;
 using System.Net;
@@ -28,35 +28,49 @@ namespace Compute.Tests
     {
         public static string DefaultLocation = "SoutheastAsia";
 
-        public static ComputeManagementClient GetComputeManagementClient(MockContext context, RecordedDelegatingHandler handler = null)
+        public static ComputeManagementClient GetComputeManagementClient(RecordedDelegatingHandler handler = null)
         {
-            if (handler != null)
-            {
-                handler.IsPassThrough = true;
-            }
-            return context.GetServiceClient<ComputeManagementClient>(
+            return GetComputeManagementClient(new CSMTestEnvironmentFactory(), 
                 handler ?? new RecordedDelegatingHandler { StatusCodeToReturn = HttpStatusCode.OK });
         }
-        
-        public static ResourceManagementClient GetResourceManagementClient(MockContext context, RecordedDelegatingHandler handler)
+
+        public static ComputeManagementClient GetComputeManagementClient(TestEnvironmentFactory factory, RecordedDelegatingHandler handler)
         {
             handler.IsPassThrough = true;
-            var client = context.GetServiceClient<ResourceManagementClient>(handler);
-            return client;
+            return TestBase.GetServiceClient<ComputeManagementClient>(factory).WithHandler(handler);
         }
 
-        public static NetworkManagementClient GetNetworkManagementClient(MockContext context, RecordedDelegatingHandler handler)
+        public static ResourceManagementClient GetResourceManagementClient(RecordedDelegatingHandler handler)
         {
-            handler.IsPassThrough = true;
-            var client = context.GetServiceClient<NetworkManagementClient>(handler);
-            return client;
+            return GetResourceManagementClient(new CSMTestEnvironmentFactory(), handler);
         }
 
-        public static StorageManagementClient GetStorageManagementClient(MockContext context, RecordedDelegatingHandler handler)
+        public static ResourceManagementClient GetResourceManagementClient(TestEnvironmentFactory factory, RecordedDelegatingHandler handler)
         {
             handler.IsPassThrough = true;
-            var client = context.GetServiceClient<StorageManagementClient>(handler);
-            return client;
+            return TestBase.GetServiceClient<ResourceManagementClient>(factory).WithHandler(handler);
+        }
+
+        public static NetworkResourceProviderClient GetNetworkResourceProviderClient(RecordedDelegatingHandler handler)
+        {
+            return GetNetworkResourceProviderClient(new CSMTestEnvironmentFactory(), handler);
+        }
+
+        public static NetworkResourceProviderClient GetNetworkResourceProviderClient(TestEnvironmentFactory factory, RecordedDelegatingHandler handler)
+        {
+            handler.IsPassThrough = true;
+            return TestBase.GetServiceClient<NetworkResourceProviderClient>(factory).WithHandler(handler);
+        }
+
+        public static StorageManagementClient GetStorageManagementClient(RecordedDelegatingHandler handler)
+        {
+            return GetStorageManagementClient(new CSMTestEnvironmentFactory(), handler);
+        }
+
+        public static StorageManagementClient GetStorageManagementClient(TestEnvironmentFactory factory, RecordedDelegatingHandler handler)
+        {
+            handler.IsPassThrough = true;
+            return TestBase.GetServiceClient<StorageManagementClient>(factory).WithHandler(handler);
         }
 
         public static void WaitSeconds(double seconds)
@@ -65,13 +79,6 @@ namespace Compute.Tests
             {
                 System.Threading.Thread.Sleep(TimeSpan.FromSeconds(seconds));
             }
-        }
-
-        public static string GenerateName(string prefix = null,
-            [System.Runtime.CompilerServices.CallerMemberName]
-            string methodName="GenerateName_failed")
-        {
-            return HttpMockServer.GetAssetName(methodName, prefix);
         }
     }
 }

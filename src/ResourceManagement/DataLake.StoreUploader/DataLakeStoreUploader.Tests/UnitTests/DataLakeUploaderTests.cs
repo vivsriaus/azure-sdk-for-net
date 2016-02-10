@@ -125,13 +125,12 @@ namespace Microsoft.Azure.Management.DataLake.StoreUploader.Tests
             //resume, overwrite
             up = CreateParameters(filePath: _smallFilePath, isResume: true, isOverwrite: true);
             uploader = new DataLakeStoreUploader(up, frontEnd);
-            uploader.Execute();
-            
+            Assert.DoesNotThrow(() => uploader.Execute());
 
             //no resume, overwrite
             up = CreateParameters(filePath: _smallFilePath, isResume: false, isOverwrite: true);
             uploader = new DataLakeStoreUploader(up, frontEnd);
-            uploader.Execute();
+            Assert.DoesNotThrow(() => uploader.Execute());
         }
 
         /// <summary>

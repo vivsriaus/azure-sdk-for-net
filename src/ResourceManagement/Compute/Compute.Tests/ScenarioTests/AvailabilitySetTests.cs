@@ -17,8 +17,7 @@ using Microsoft.Azure.Management.Compute;
 using Microsoft.Azure.Management.Compute.Models;
 using Microsoft.Azure.Management.Resources;
 using Microsoft.Azure.Management.Resources.Models;
-using Microsoft.Rest.Azure;
-using Microsoft.Rest.ClientRuntime.Azure.TestFramework;
+using Microsoft.Azure.Test;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,17 +26,17 @@ using Xunit;
 
 namespace Compute.Tests
 {
-    public class AvailabilitySetTests : VMTestBase
+    public class AvailabilitySetTests
     {
         RecordedDelegatingHandler handler;
         ComputeManagementClient computeClient;
         ResourceManagementClient resourcesClient;
 
-        ResourceGroup resourceGroup;
+        ResourceGroupCreateOrUpdateResult resourceGroup;
 
         string subId;
         string location;
-        const string testPrefix = TestPrefix;
+        const string testPrefix = "pslibtest";
         string resourceGroupName;
 
         // These values are configurable in the service, but normal default values are FD = 3 and UD = 5
@@ -58,9 +57,11 @@ namespace Compute.Tests
         [Fact]
         public void TestOperations()
         {
-            using (MockContext context = MockContext.Start(this.GetType().FullName))
+            using (var context = UndoContext.Current)
             {
-                Initialize(context);
+                context.Start();
+
+                Initialize();
 
                 try
                 {
@@ -74,41 +75,42 @@ namespace Compute.Tests
                     VerifyNonDefaultValuesSucceed();
 
                     // Updating an Availability Set should fail
-                    //VerifyUpdateFails();
+                    VerifyUpdateFails();
                 }
                 finally
                 {
-                    resourcesClient.ResourceGroups.Delete(resourceGroupName);
+                    var deleteResourceGroupResponse = resourcesClient.ResourceGroups.BeginDeleting(resourceGroupName);
+                    Assert.True(deleteResourceGroupResponse.StatusCode == HttpStatusCode.Accepted);
                 }
             }
         }
 
-        private void Initialize(MockContext context)
+        private void Initialize()
         {
             handler = new RecordedDelegatingHandler { StatusCodeToReturn = HttpStatusCode.OK };
-            resourcesClient = ComputeManagementTestUtilities.GetResourceManagementClient(context, handler);
-            computeClient = ComputeManagementTestUtilities.GetComputeManagementClient(context, handler);
+            resourcesClient = ComputeManagementTestUtilities.GetResourceManagementClient(handler);
+            computeClient = ComputeManagementTestUtilities.GetComputeManagementClient(handler);
 
-            subId = computeClient.SubscriptionId;
+            subId = computeClient.Credentials.SubscriptionId;
             location = ComputeManagementTestUtilities.DefaultLocation;
 
-            resourceGroupName = ComputeManagementTestUtilities.GenerateName(testPrefix);
+            resourceGroupName = TestUtilities.GenerateName(testPrefix);
 
             resourceGroup = resourcesClient.ResourceGroups.CreateOrUpdate(
                 resourceGroupName,
                 new ResourceGroup
                 {
-                    Location = location,
-                    Tags = new Dictionary<string, string>() { { resourceGroupName, DateTime.UtcNow.ToString("u") } }
+                    Location = location
                 });
         }
 
         private void VerifyUpdateFails()
         {
-            var availabilitySetName = ComputeManagementTestUtilities.GenerateName("asupdateFails");
+            var availabilitySetName = TestUtilities.GenerateName("asupdateFails");
             var inputAvailabilitySet = new AvailabilitySet
             {
                 Location = location,
+                Name = availabilitySetName,
                 Tags = new Dictionary<string, string>()
                 {
                     {"RG", "rg"},
@@ -117,13 +119,15 @@ namespace Compute.Tests
             };
 
             // Create and expect success.
-            var createOrUpdateResponse = computeClient.AvailabilitySets.CreateOrUpdate(resourceGroupName, availabilitySetName, inputAvailabilitySet);
+            var createOrUpdateResponse = computeClient.AvailabilitySets.CreateOrUpdate(resourceGroupName, inputAvailabilitySet);
+            Assert.True(createOrUpdateResponse.StatusCode == HttpStatusCode.OK);
 
             try // Modify the FD and expect failure
             {
                 inputAvailabilitySet = new AvailabilitySet
                 {
                     Location = location,
+                    Name = availabilitySetName,
                     Tags = new Dictionary<string, string>()
                     {
                         {"RG", "rg"},
@@ -133,11 +137,12 @@ namespace Compute.Tests
                 };
 
                 createOrUpdateResponse = null;
-                createOrUpdateResponse = computeClient.AvailabilitySets.CreateOrUpdate(resourceGroupName, availabilitySetName, inputAvailabilitySet);
+                createOrUpdateResponse = computeClient.AvailabilitySets.CreateOrUpdate(resourceGroupName, inputAvailabilitySet);
             }
-            catch (CloudException ex)
+            catch (Hyak.Common.CloudException ex)
             {
-                Assert.True(ex.Response.StatusCode == HttpStatusCode.Forbidden);
+                Assert.True(ex.Response.StatusCode == HttpStatusCode.Conflict);
+                Assert.True(ex.Error.Code == "PropertyChangeNotAllowed");
             }
             Assert.True(createOrUpdateResponse == null);
 
@@ -146,6 +151,7 @@ namespace Compute.Tests
                 inputAvailabilitySet = new AvailabilitySet
                 {
                     Location = location,
+                    Name = availabilitySetName,
                     Tags = new Dictionary<string, string>()
                     {
                         {"RG", "rg"},
@@ -155,16 +161,17 @@ namespace Compute.Tests
                 };
 
                 createOrUpdateResponse = null;
-                createOrUpdateResponse = computeClient.AvailabilitySets.CreateOrUpdate(resourceGroupName, availabilitySetName, inputAvailabilitySet);
+                createOrUpdateResponse = computeClient.AvailabilitySets.CreateOrUpdate(resourceGroupName, inputAvailabilitySet);
             }
-            catch (CloudException ex)
+            catch (Hyak.Common.CloudException ex)
             {
-                Assert.True(ex.Response.StatusCode == HttpStatusCode.Forbidden);
+                Assert.True(ex.Response.StatusCode == HttpStatusCode.Conflict);
+                Assert.True(ex.Error.Code == "PropertyChangeNotAllowed");
             }
             Assert.True(createOrUpdateResponse == null);
 
             // Clean up
-            computeClient.AvailabilitySets.Delete(resourceGroupName, availabilitySetName);
+            var deleteOperationResponse = computeClient.AvailabilitySets.Delete(resourceGroupName, availabilitySetName);
         }
 
         private void VerifyNonDefaultValuesSucceed()
@@ -177,10 +184,10 @@ namespace Compute.Tests
                 Message = "test"
             };
 
-            string inputAvailabilitySetName = ComputeManagementTestUtilities.GenerateName("asnondefault");
             var inputAvailabilitySet = new AvailabilitySet
             {
                 Location = location,
+                Name = TestUtilities.GenerateName("asnondefault"),
                 Tags = new Dictionary<string, string>()
                     {
                         {"RG", "rg"},
@@ -196,19 +203,18 @@ namespace Compute.Tests
 
             var createOrUpdateResponse = computeClient.AvailabilitySets.CreateOrUpdate(
                 resourceGroupName,
-                inputAvailabilitySetName,
                 inputAvailabilitySet);
 
             // This call will also delete the Availability Set
-            ValidateResults(createOrUpdateResponse, inputAvailabilitySet, inputAvailabilitySetName, nonDefaultFD, nonDefaultUD);
+            ValidateResults(createOrUpdateResponse, inputAvailabilitySet, nonDefaultFD, nonDefaultUD);
         }
 
         private void VerifyDefaultValuesSucceed()
         {
-            var inputAvailabilitySetName = ComputeManagementTestUtilities.GenerateName("asdefaultvalues");
             var inputAvailabilitySet = new AvailabilitySet
             {
                 Location = location,
+                Name = TestUtilities.GenerateName("asdefaultvalues"),
                 Tags = new Dictionary<string, string>()
                     {
                         {"RG", "rg"},
@@ -218,25 +224,18 @@ namespace Compute.Tests
 
             var createOrUpdateResponse = computeClient.AvailabilitySets.CreateOrUpdate(
                 resourceGroupName,
-                inputAvailabilitySetName,
                 inputAvailabilitySet);
 
-            // List AvailabilitySets
-            string expectedAvailabilitySetId = Helpers.GetAvailabilitySetRef(subId, resourceGroupName, inputAvailabilitySetName);
-            var listResponse = computeClient.AvailabilitySets.List(resourceGroupName);
-            ValidateAvailabilitySet(inputAvailabilitySet, listResponse.FirstOrDefault(x => x.Name == inputAvailabilitySetName),
-                inputAvailabilitySetName, expectedAvailabilitySetId, defaultFD, defaultUD);
-
             // This call will also delete the Availability Set
-            ValidateResults(createOrUpdateResponse, inputAvailabilitySet, inputAvailabilitySetName, defaultFD, defaultUD);
+            ValidateResults(createOrUpdateResponse, inputAvailabilitySet, defaultFD, defaultUD);
         }
 
         private void VerifyInvalidFDUDValuesFail()
         {
-            var inputAvailabilitySetName = ComputeManagementTestUtilities.GenerateName("invalidfdud");
             var inputAvailabilitySet = new AvailabilitySet
             {
                 Location = location,
+                Name = TestUtilities.GenerateName("invalidfdud"),
                 Tags = new Dictionary<string, string>()
                     {
                         {"RG", "rg"},
@@ -246,17 +245,18 @@ namespace Compute.Tests
 
             // function to test the limits available.       
             inputAvailabilitySet.PlatformFaultDomainCount = FDTooLow;
-            AvailabilitySet createOrUpdateResponse = null;
+            AvailabilitySetCreateOrUpdateResponse createOrUpdateResponse = null;
             try
             {
                 createOrUpdateResponse = computeClient.AvailabilitySets.CreateOrUpdate(
                     resourceGroupName,
-                    inputAvailabilitySetName,
                     inputAvailabilitySet);
             }
-            catch (CloudException ex)
+            catch (Hyak.Common.CloudException ex)
             {
                 Assert.True(ex.Response.StatusCode == HttpStatusCode.BadRequest);
+                Assert.True(ex.Error.Code == "InvalidParameter");
+
             }
             Assert.True(createOrUpdateResponse == null);
 
@@ -265,12 +265,12 @@ namespace Compute.Tests
             {
                 createOrUpdateResponse = computeClient.AvailabilitySets.CreateOrUpdate(
                     resourceGroupName,
-                    inputAvailabilitySetName,
                     inputAvailabilitySet);
             }
-            catch (CloudException ex)
+            catch (Hyak.Common.CloudException ex)
             {
                 Assert.True(ex.Response.StatusCode == HttpStatusCode.BadRequest);
+                Assert.True(ex.Error.Code == "InvalidParameter");
 
             }
             Assert.True(createOrUpdateResponse == null);
@@ -280,12 +280,12 @@ namespace Compute.Tests
             {
                 createOrUpdateResponse = computeClient.AvailabilitySets.CreateOrUpdate(
                     resourceGroupName,
-                    inputAvailabilitySetName,
                     inputAvailabilitySet);
             }
-            catch (CloudException ex)
+            catch (Hyak.Common.CloudException ex)
             {
                 Assert.True(ex.Response.StatusCode == HttpStatusCode.BadRequest);
+                Assert.True(ex.Error.Code == "InvalidParameter");
 
             }
             Assert.True(createOrUpdateResponse == null);
@@ -295,43 +295,53 @@ namespace Compute.Tests
             {
                 createOrUpdateResponse = computeClient.AvailabilitySets.CreateOrUpdate(
                 resourceGroupName,
-                inputAvailabilitySetName,
                 inputAvailabilitySet);
             }
-            catch (CloudException ex)
+            catch (Hyak.Common.CloudException ex)
             {
                 Assert.True(ex.Response.StatusCode == HttpStatusCode.BadRequest);
+                Assert.True(ex.Error.Code == "InvalidParameter");
 
             }
             Assert.True(createOrUpdateResponse == null);
         }
 
-        private void ValidateResults(AvailabilitySet createOrUpdateResponse, AvailabilitySet inputAvailabilitySet, string inputAvailabilitySetName, int expectedFD, int expectedUD)
+        private void ValidateResults(AvailabilitySetCreateOrUpdateResponse createOrUpdateResponse, AvailabilitySet inputAvailabilitySet, int expectedFD, int expectedUD)
         {
-            string expectedAvailabilitySetId = Helpers.GetAvailabilitySetRef(subId, resourceGroupName, inputAvailabilitySetName);
+            string expectedAvailabilitySetId = Helpers.GetAvailabilitySetRef(subId, resourceGroupName, inputAvailabilitySet.Name);
 
-            Assert.True(createOrUpdateResponse.Name == inputAvailabilitySetName);
-            Assert.True(createOrUpdateResponse.Location.ToLower() == this.location.ToLower()
-                     || createOrUpdateResponse.Location.ToLower() == inputAvailabilitySet.Location.ToLower());
+            Assert.True(createOrUpdateResponse.StatusCode == HttpStatusCode.OK);
 
-            ValidateAvailabilitySet(inputAvailabilitySet, createOrUpdateResponse, inputAvailabilitySetName, expectedAvailabilitySetId, expectedFD, expectedUD);
+            Assert.True(createOrUpdateResponse.AvailabilitySet.Name == inputAvailabilitySet.Name);
+            Assert.True(createOrUpdateResponse.AvailabilitySet.Location.ToLower() == this.location.ToLower()
+                     || createOrUpdateResponse.AvailabilitySet.Location.ToLower() == inputAvailabilitySet.Location.ToLower());
+
+            ValidateAvailabilitySet(inputAvailabilitySet, createOrUpdateResponse.AvailabilitySet, expectedAvailabilitySetId, expectedFD, expectedUD);
 
             // GET AvailabilitySet
-            var getResponse = computeClient.AvailabilitySets.Get(resourceGroupName, inputAvailabilitySetName);
-            ValidateAvailabilitySet(inputAvailabilitySet, getResponse, inputAvailabilitySetName, expectedAvailabilitySetId, expectedFD, expectedUD);
+            var getResponse = computeClient.AvailabilitySets.Get(resourceGroupName, inputAvailabilitySet.Name);
+            Assert.True(getResponse.StatusCode == HttpStatusCode.OK);
+            ValidateAvailabilitySet(inputAvailabilitySet, getResponse.AvailabilitySet, expectedAvailabilitySetId, expectedFD, expectedUD);
 
-            // List VM Sizes
-            var listVMSizesResponse = computeClient.AvailabilitySets.ListAvailableSizes(resourceGroupName, inputAvailabilitySetName);
+            // List AvailabilitySets
+            var listResponse = computeClient.AvailabilitySets.List(resourceGroupName);
+            Assert.True(listResponse.StatusCode == HttpStatusCode.OK);
+            ValidateAvailabilitySet(inputAvailabilitySet, listResponse.AvailabilitySets.FirstOrDefault(x => x.Name == inputAvailabilitySet.Name),
+                expectedAvailabilitySetId, expectedFD, expectedUD);
+
+            var listVMSizesResponse = computeClient.AvailabilitySets.ListAvailableSizes(resourceGroupName, inputAvailabilitySet.Name);
+            Assert.True(listVMSizesResponse.StatusCode == HttpStatusCode.OK);
             Helpers.ValidateVirtualMachineSizeListResponse(listVMSizesResponse);
 
             // Delete AvailabilitySet
-            computeClient.AvailabilitySets.Delete(resourceGroupName, inputAvailabilitySetName);
+            var deleteOperationResponse = computeClient.AvailabilitySets.Delete(resourceGroupName, inputAvailabilitySet.Name);
+            Assert.True(deleteOperationResponse.StatusCode == HttpStatusCode.OK);
         }
 
 
-        private void ValidateAvailabilitySet(AvailabilitySet inputAvailabilitySet, AvailabilitySet outputAvailabilitySet, string inputAvailabilitySetName, string expectedAvailabilitySetId, int expectedFD, int expectedUD)
+        private void ValidateAvailabilitySet(AvailabilitySet inputAvailabilitySet, AvailabilitySet outputAvailabilitySet, string expectedAvailabilitySetId, int expectedFD, int expectedUD)
         {
-            Assert.True(inputAvailabilitySetName == outputAvailabilitySet.Name);
+            Assert.True(inputAvailabilitySet.Name == outputAvailabilitySet.Name);
             Assert.True(outputAvailabilitySet.Type == ApiConstants.ResourceProviderNamespace + "/" + ApiConstants.AvailabilitySets);
 
             Assert.True(outputAvailabilitySet != null);

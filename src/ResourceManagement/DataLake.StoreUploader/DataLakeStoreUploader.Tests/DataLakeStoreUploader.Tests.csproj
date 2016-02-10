@@ -16,6 +16,17 @@
   <Import Project="..\..\..\..\tools\Library.Settings.targets" />
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.Azure.Management.DataLake.StoreUploader\Microsoft.Azure.Management.DataLake.StoreUploader.csproj">
+  <PropertyGroup>
+    <ProjectGuid>{F290EF7A-4C4B-49ED-A6B5-34FC781E4DCD}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="..\..\..\..\tools\Library.Settings.targets" />
+  <Import Project="$(LibraryToolsFolder)\Test.Dependencies.target" />
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\TestDependencies\TestDependencies.csproj">
+      <Project>{40f35645-00ee-4df2-b66e-7624546b66df}</Project>
+      <Name>TestDependencies</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DataLakeStoreUploader\DataLakeStoreUploader.csproj">
       <Project>{ad47b1e5-3400-4acd-8403-c29b42ed9112}</Project>
       <Name>DataLakeUploader</Name>
     </ProjectReference>

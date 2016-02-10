@@ -17,7 +17,7 @@ using Microsoft.Azure.Management.DataLake.Analytics;
 using Microsoft.Azure.Management.DataLake.Store;
 using Microsoft.Azure.Management.Resources;
 using Microsoft.Azure.Management.Storage;
-using Microsoft.Rest.ClientRuntime.Azure.TestFramework;
+using Microsoft.Azure.Test;
 
 namespace DataLakeAnalytics.Tests
 {
@@ -28,9 +28,9 @@ namespace DataLakeAnalytics.Tests
         /// </summary>
         /// <param name="testBase">the test class</param>
         /// <returns>A bigAnalytics management client, created from the current context (environment variables)</returns>
-        public static DataLakeAnalyticsManagementClient GetDataLakeAnalyticsManagementClient(this TestBase testBase, MockContext context)
+        public static IDataLakeAnalyticsManagementClient GetDataLakeAnalyticsManagementClient(this TestBase testBase)
         {
-            return context.GetServiceClient<DataLakeAnalyticsManagementClient>();
+            return TestBase.GetServiceClient<DataLakeAnalyticsManagementClient>(new CSMTestEnvironmentFactory());
         }
 
         /// <summary>
@@ -38,9 +38,9 @@ namespace DataLakeAnalytics.Tests
         /// </summary>
         /// <param name="testBase">the test class</param>
         /// <returns>A resource management client, created from the current context (environment variables)</returns>
-        public static ResourceManagementClient GetResourceManagementClient(this TestBase testBase, MockContext context)
+        public static ResourceManagementClient GetResourceManagementClient(this TestBase testBase)
         {
-            return context.GetServiceClient<ResourceManagementClient>();
+            return TestBase.GetServiceClient<ResourceManagementClient>(new CSMTestEnvironmentFactory());
         }
 
         /// <summary>
@@ -48,9 +48,9 @@ namespace DataLakeAnalytics.Tests
         /// </summary>
         /// <param name="testBase">the test class</param>
         /// <returns>A storage management client, created from the current context (environment variables)</returns>
-        public static StorageManagementClient GetStorageManagementClient(this TestBase testBase, MockContext context)
+        public static StorageManagementClient GetStorageManagementClient(this TestBase testBase)
         {
-            return context.GetServiceClient<StorageManagementClient>();
+            return TestBase.GetServiceClient<StorageManagementClient>(new CSMTestEnvironmentFactory());
         }
 
         /// <summary>
@@ -58,39 +58,9 @@ namespace DataLakeAnalytics.Tests
         /// </summary>
         /// <param name="testBase">the test class</param>
         /// <returns>A dataLake management client, created from the current context (environment variables)</returns>
-        public static DataLakeStoreManagementClient GetDataLakeStoreManagementClient(this TestBase testBase, MockContext context)
+        public static DataLakeStoreManagementClient GetDataLakeStoreManagementClient(this TestBase testBase)
         {
-            return context.GetServiceClient<DataLakeStoreManagementClient>();
-        }
-
-        /// <summary>
-        /// Default constructor for management clients, using the TestSupport Infrastructure
-        /// </summary>
-        /// <param name="testBase">the test class</param>
-        /// <returns>A Data Lake analytics catalog management client, created from the current context (environment variables)</returns>
-        public static DataLakeAnalyticsCatalogManagementClient GetDataLakeAnalyticsCatalogManagementClient(this TestBase testBase, MockContext context)
-        {
-            var client = context.GetServiceClient<DataLakeAnalyticsCatalogManagementClient>();
-            
-            // reset back to the default to ensure the logic works as expected.
-            client.BaseUri = new System.Uri("https://accountname.catalogserviceuri");
-            client.Catalogserviceuri = TestEnvironmentFactory.GetTestEnvironment().Endpoints.DataLakeAnalyticsJobAndCatalogServiceUri.OriginalString.Replace("https://", "");
-            return client;
-        }
-
-        /// <summary>
-        /// Default constructor for management clients, using the TestSupport Infrastructure
-        /// </summary>
-        /// <param name="testBase">the test class</param>
-        /// <returns>A bigAnalytics management client, created from the current context (environment variables)</returns>
-        public static DataLakeAnalyticsJobManagementClient GetDataLakeAnalyticsJobManagementClient(this TestBase testBase, MockContext context)
-        {
-            var client = context.GetServiceClient<DataLakeAnalyticsJobManagementClient>();
-
-            // reset back to the default to ensure the logic works as expected.
-            client.BaseUri = new System.Uri("https://accountname.jobserviceuri");
-            client.Jobserviceuri = TestEnvironmentFactory.GetTestEnvironment().Endpoints.DataLakeAnalyticsJobAndCatalogServiceUri.OriginalString.Replace("https://", "");
-            return client;
+            return TestBase.GetServiceClient<DataLakeStoreManagementClient>(new CSMTestEnvironmentFactory());
         }
     }
 }

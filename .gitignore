@@ -5,8 +5,6 @@
 *.suo
 *.user
 *.sln.docstates
-.vs/
-*.lock.json
 developer/
 
 # Build results
@@ -14,8 +12,6 @@ binaries/
 [Dd]ebug*/
 [Rr]elease/
 build/
-src/NuGet.Config
-tools/7-zip/
 
 [Tt]est[Rr]esult
 [Bb]uild[Ll]og.*
@@ -134,5 +130,3 @@ build.out
 
 # Azure Project
 csx/
-*.GhostDoc.xml
-pingme.txt

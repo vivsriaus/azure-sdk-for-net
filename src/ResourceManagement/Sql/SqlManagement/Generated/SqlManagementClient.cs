@@ -102,6 +102,17 @@ namespace Microsoft.Azure.Management.Sql
             get { return this._auditingPolicy; }
         }
         
+        private ICapabilitiesOperations _capabilities;
+        
+        /// <summary>
+        /// Represents all the operations for determining the set of
+        /// capabilites available in a specified region.
+        /// </summary>
+        public virtual ICapabilitiesOperations Capabilities
+        {
+            get { return this._capabilities; }
+        }
+        
         private IDatabaseActivationOperations _databaseActivation;
         
         /// <summary>
@@ -198,6 +209,18 @@ namespace Microsoft.Azure.Management.Sql
             get { return this._recommendedIndexes; }
         }
         
+        private IReplicationLinkOperations _databaseReplicationLinks;
+        
+        /// <summary>
+        /// Represents all the operations for operating on Azure SQL Database
+        /// Replication Links.  Contains operations to: Delete and Retrieve
+        /// replication links.
+        /// </summary>
+        public virtual IReplicationLinkOperations DatabaseReplicationLinks
+        {
+            get { return this._databaseReplicationLinks; }
+        }
+        
         private ISecureConnectionPolicyOperations _secureConnection;
         
         /// <summary>
@@ -208,6 +231,31 @@ namespace Microsoft.Azure.Management.Sql
         public virtual ISecureConnectionPolicyOperations SecureConnection
         {
             get { return this._secureConnection; }
+        }
+        
+        private ISecurityAlertPolicyOperations _securityAlertPolicy;
+        
+        /// <summary>
+        /// Represents all the operations to manage Azure SQL Database and
+        /// Database Server Security Alert policy.  Contains operations to:
+        /// Create, Retrieve and Update policy.
+        /// </summary>
+        public virtual ISecurityAlertPolicyOperations SecurityAlertPolicy
+        {
+            get { return this._securityAlertPolicy; }
+        }
+        
+        private IServerAdministratorOperations _serverAdministrators;
+        
+        /// <summary>
+        /// Represents all the operations for operating on Azure SQL Server
+        /// Active Directory Administrators.  Contains operations to: Create,
+        /// Retrieve, Update, and Delete Azure SQL Server Active Directory
+        /// Administrators.
+        /// </summary>
+        public virtual IServerAdministratorOperations ServerAdministrators
+        {
+            get { return this._serverAdministrators; }
         }
         
         private IServerOperations _servers;
@@ -266,7 +314,18 @@ namespace Microsoft.Azure.Management.Sql
         {
             get { return this._transparentDataEncryption; }
         }
-        
+
+        private IServerCommunicationLinkOperations _communicationLinks;
+
+        /// <summary>
+        /// Represents all the operations of Azure SQL Database Server
+        /// Communication links.  Contains operations to: Create, Retrieve, and Delete.
+        /// </summary>
+        public virtual IServerCommunicationLinkOperations CommunicationLinks
+        {
+            get { return this._communicationLinks; }
+        }
+
         /// <summary>
         /// Initializes a new instance of the SqlManagementClient class.
         /// </summary>
@@ -274,6 +333,7 @@ namespace Microsoft.Azure.Management.Sql
             : base()
         {
             this._auditingPolicy = new AuditingPolicyOperations(this);
+            this._capabilities = new CapabilitiesOperations(this);
             this._databaseActivation = new DatabaseActivationOperations(this);
             this._databaseBackup = new DatabaseBackupOperations(this);
             this._databases = new DatabaseOperations(this);
@@ -282,12 +342,16 @@ namespace Microsoft.Azure.Management.Sql
             this._firewallRules = new FirewallRuleOperations(this);
             this._recommendedElasticPools = new RecommendedElasticPoolOperations(this);
             this._recommendedIndexes = new RecommendedIndexOperations(this);
+            this._databaseReplicationLinks = new ReplicationLinkOperations(this);
             this._secureConnection = new SecureConnectionPolicyOperations(this);
+            this._securityAlertPolicy = new SecurityAlertPolicyOperations(this);
+            this._serverAdministrators = new ServerAdministratorOperations(this);
             this._servers = new ServerOperations(this);
             this._serverUpgrades = new ServerUpgradeOperations(this);
             this._serviceObjectives = new ServiceObjectiveOperations(this);
             this._serviceTierAdvisors = new ServiceTierAdvisorOperations(this);
             this._transparentDataEncryption = new TransparentDataEncryptionOperations(this);
+            this._communicationLinks = new ServerCommunicationLinkOperations(this);
             this._apiVersion = "2014-04-01";
             this._longRunningOperationInitialTimeout = -1;
             this._longRunningOperationRetryTimeout = -1;
@@ -354,6 +418,7 @@ namespace Microsoft.Azure.Management.Sql
             : base(httpClient)
         {
             this._auditingPolicy = new AuditingPolicyOperations(this);
+            this._capabilities = new CapabilitiesOperations(this);
             this._databaseActivation = new DatabaseActivationOperations(this);
             this._databaseBackup = new DatabaseBackupOperations(this);
             this._databases = new DatabaseOperations(this);
@@ -362,12 +427,16 @@ namespace Microsoft.Azure.Management.Sql
             this._firewallRules = new FirewallRuleOperations(this);
             this._recommendedElasticPools = new RecommendedElasticPoolOperations(this);
             this._recommendedIndexes = new RecommendedIndexOperations(this);
+            this._databaseReplicationLinks = new ReplicationLinkOperations(this);
             this._secureConnection = new SecureConnectionPolicyOperations(this);
+            this._securityAlertPolicy = new SecurityAlertPolicyOperations(this);
+            this._serverAdministrators = new ServerAdministratorOperations(this);
             this._servers = new ServerOperations(this);
             this._serverUpgrades = new ServerUpgradeOperations(this);
             this._serviceObjectives = new ServiceObjectiveOperations(this);
             this._serviceTierAdvisors = new ServiceTierAdvisorOperations(this);
             this._transparentDataEncryption = new TransparentDataEncryptionOperations(this);
+            this._communicationLinks = new ServerCommunicationLinkOperations(this);
             this._apiVersion = "2014-04-01";
             this._longRunningOperationInitialTimeout = -1;
             this._longRunningOperationRetryTimeout = -1;

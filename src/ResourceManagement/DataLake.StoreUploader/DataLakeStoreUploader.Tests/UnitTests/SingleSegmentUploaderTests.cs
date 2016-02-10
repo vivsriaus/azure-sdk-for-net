@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Management.DataLake.StoreUploader.Tests
             //load up an existing stream
             fe.CreateStream(StreamPath, true, null, 0);
             var data = Encoding.UTF8.GetBytes("random");
-            fe.AppendToStream(StreamPath, data, 0, (int)data.Length);
+            fe.AppendToStream(StreamPath, data, 0, data.Length);
 
             //force a re-upload of the stream
             var metadata = CreateMetadata(_smallFilePath, _smallFileContents.Length);
@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Management.DataLake.StoreUploader.Tests
 
             if (expectSuccess)
             {
-                ssu.Upload();
+                Assert.DoesNotThrow(() => ssu.Upload());
                 var actualContents = workingFrontEnd.GetStreamContents(StreamPath);
                 AssertExtensions.AreEqual(_smallFileContents, actualContents, "Unexpected uploaded stream contents.");
             }

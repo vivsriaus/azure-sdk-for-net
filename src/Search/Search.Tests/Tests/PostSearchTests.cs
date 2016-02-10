@@ -1,12 +1,23 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for
-// license information.
+﻿// 
+// Copyright (c) Microsoft.  All rights reserved. 
+// 
+// Licensed under the Apache License, Version 2.0 (the "License"); 
+// you may not use this file except in compliance with the License. 
+// You may obtain a copy of the License at 
+//   http://www.apache.org/licenses/LICENSE-2.0 
+// 
+// Unless required by applicable law or agreed to in writing, software 
+// distributed under the License is distributed on an "AS IS" BASIS, 
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
+// See the License for the specific language governing permissions and 
+// limitations under the License. 
+// 
+
+using Microsoft.Azure.Test.TestCategories;
+using Xunit;
 
 namespace Microsoft.Azure.Search.Tests
 {
-    using Microsoft.Rest.ClientRuntime.Azure.TestFramework;
-    using Xunit;
-
     public class PostSearchTests : SearchTests
     {
         [Fact]
@@ -76,12 +87,6 @@ namespace Microsoft.Azure.Search.Tests
         }
 
         [Fact]
-        public void CanSearchWithLuceneSyntax()
-        {
-            Run(TestCanSearchWithLuceneSyntax);
-        }
-
-        [Fact]
         public void CanUseTopAndSkipForClientSidePaging()
         {
             Run(TestCanUseTopAndSkipForClientSidePaging);
@@ -137,42 +142,6 @@ namespace Microsoft.Azure.Search.Tests
         public void CanSearchWithDateTimeInStaticModel()
         {
             Run(TestCanSearchWithDateTimeInStaticModel);
-        }
-
-        [Fact]
-        public void CanRoundTripNonNullableValueTypes()
-        {
-            Run(TestCanRoundTripNonNullableValueTypes);
-        }
-
-        [Fact]
-        public void NullCannotBeConvertedToValueType()
-        {
-            Run(TestNullCannotBeConvertedToValueType);
-        }
-
-        [Fact]
-        public void CanFilterNonNullableType()
-        {
-            Run(TestCanFilterNonNullableType);
-        }
-
-        [Fact]
-        public void CanSearchWithCustomContractResolver()
-        {
-            Run(TestCanSearchWithCustomContractResolver);
-        }
-
-        [Fact]
-        public void CanSearchWithCustomConverterViaSettings()
-        {
-            Run(TestCanSearchWithCustomConverterViaSettings);
-        }
-
-        [Fact]
-        public void CanSearchWithCustomConverter()
-        {
-            Run(TestCanSearchWithCustomConverter);
         }
     }
 }
